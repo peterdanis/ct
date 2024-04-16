@@ -1,7 +1,7 @@
 {
-  "name": "product",
+  "name": "product-service",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "apps/product/src",
+  "sourceRoot": "apps/product-service/src",
   "projectType": "application",
   "tags": [],
   "targets": {
@@ -9,14 +9,14 @@
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "product:build"
+        "buildTarget": "product-service:build"
       },
       "configurations": {
         "development": {
-          "buildTarget": "product:build:development"
+          "buildTarget": "product-service:build:development"
         },
         "production": {
-          "buildTarget": "product:build:production"
+          "buildTarget": "product-service:build:production"
         }
       }
     }
