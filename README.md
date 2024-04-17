@@ -1,39 +1,80 @@
 # CT
 
-This repo was generated using NX monorepo tool and consist of two services:
+Hello visitor :wave: ! This repo was created as assignment homework for a engineering role I applied for and reflects my thoughts at that time on a given use-case. Repo was generated using NX monorepo tool
 
-- produce-service
-- review-service
+<!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
 
-### High level overview
+<!-- code_chunk_output -->
+
+- [CT](#ct)
+  - [Overview](#overview)
+  - [Assignment notes](#assignment-notes)
+    - [Caching](#caching)
+      - [Cache directly in service](#cache-directly-in-service)
+      - [Side-car Redis](#side-car-redis)
+      - [Shared Redis](#shared-redis)
+      - [DAX in front of DynamoDB](#dax-in-front-of-dynamodb)
+      - [API GW / CDN cache](#api-gw--cdn-cache)
+    - [DB](#db)
+  - [How to](#how-to)
+    - [Start whole project](#start-whole-project)
+    - [Start just one of the services](#start-just-one-of-the-services)
+    - [Build for production](#build-for-production)
+    - [Run other tasks](#run-other-tasks)
+
+<!-- /code_chunk_output -->
+
+---
+
+## Overview
 
 ```mermaid
-flowchart
+---
+title: "High level perspective"
+---
+flowchart TD
 
+c(Client)
 lb(Load balancer)
-ps(Product service)
-pdb[(DB)]
-kfkt1(create/update/delete review\n Kafka topic)
-kfkt2(average rating calculation\n Kafka topic)
-rs(Review service)
-rdb[(DB)]
 
-Client --> lb
-lb --> ps
-direction LR
-ps --- pdb
-ps --> kfkt1
-kfkt2 --> ps
-rs --- rdb
-rs --> kfkt2
-kfkt1 --> rs
+subgraph PS
+ps1(Product service\n Instance 1)
+ps2(Product service\n Instance 2)
+psn(Product service\n N-th Instance..)
+end
+
+rds[(Redis)]
+pdb[(DynamoDB)]
+
+subgraph Kafka
+kfkt1(create/update/delete review\n topic)
+kfkt2(average rating calculation\n topic)
+end
+
+subgraph RS
+rs1(Review service\n Instance 1)
+rs2(Review service\n Instance 2)
+rsn(Review service\n N-th Instance..)
+end
+
+rdb[(DynamoDB)]
+
+c --> lb
+lb ---> PS
+rds -.- PS
+pdb -.- PS
+PS <--> Kafka
+Kafka <--> RS
+RS -.- rdb
 ```
 
-### Notes
+---
 
-#### Caching
+## Assignment notes
 
-##### Cache directly in service
+### Caching
+
+#### Cache directly in service
 
 Cache products and reviews in JS object or map.
 
@@ -63,7 +104,7 @@ note: order of cache / DB operation matters, e.g. if we would store in cache fir
   - service updates / cluster re-balancing / etc. will lead to more DB reads temporarily, as the cache will be empty on fresh instance startup
   - can not be done in Lambda (except for a single instance lambdalith - one lambda for all CRUD operations with reserved concurrency set to 1, which doesn't make any sense)
 
-##### Side-car Redis
+#### Side-car Redis
 
 Run small Redis container as a side-car (container in same pod as node.js service), memory-only without persistance layer
 
@@ -100,19 +141,19 @@ open point for discussion: how to properly handle cache update, or delete, if it
   - service updates / cluster re-balancing / etc. will lead to more DB reads temporarily, as the cache will be empty on fresh instance startup
   - can not be done in Lambda
 
-##### Shared Redis
+#### Shared Redis
 
 Run a Redis instance with or without persistance layer, as a service in k8s cluster or AWS hosted. Same CRUD procedure as with side-car Redis above.
 
-##### DAX in front of DynamoDB
+#### DAX in front of DynamoDB
 
 Use DAX (DynamoDB Accelerator) in front of DynamoDB. I can't judge pros & cons, haven't use the service nor read its limitations.
 
-##### API GW / CDN cache
+#### API GW / CDN cache
 
 Implementing caching in front of a service on API GW or Cloudfront / CDN level is probably worthwhile only when we are OK with some stale records (depending on cache TTL setting), but would be the fastest non client-side solution.
 
-#### DB
+### DB
 
 DynamoDB provides following benefits for this use-case:
 
