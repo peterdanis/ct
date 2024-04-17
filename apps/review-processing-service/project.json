@@ -1,7 +1,7 @@
 {
-  "name": "review-service",
+  "name": "review-processing-service",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "apps/review-service/src",
+  "sourceRoot": "apps/review-processing-service/src",
   "projectType": "application",
   "tags": [],
   "targets": {
@@ -9,14 +9,14 @@
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "review-service:build"
+        "buildTarget": "review-processing-service:build"
       },
       "configurations": {
         "development": {
-          "buildTarget": "review-service:build:development"
+          "buildTarget": "review-processing-service:build:development"
         },
         "production": {
-          "buildTarget": "review-service:build:production"
+          "buildTarget": "review-processing-service:build:production"
         }
       }
     }
