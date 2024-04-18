@@ -8,7 +8,7 @@ export class GetProductsDto {
   @ValidateNested()
   products: ProductDto[];
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
   paginationToken: string;

@@ -35,6 +35,7 @@ export class ProductsController {
   }
 
   @Post()
+  @ApiOkResponse({ type: ProductDto })
   async create(
     @Body() createProductDto: CreateProductDto
   ): Promise<ProductDto> {
@@ -50,6 +51,7 @@ export class ProductsController {
   }
 
   @Patch(':productId')
+  @ApiOkResponse({ type: ProductDto })
   async update(
     @Body() updateProductDto: UpdateProductDto,
     @Param('productId') productId: string
