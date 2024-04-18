@@ -1,6 +1,6 @@
 # CT
 
-Hello visitor :wave: ! This repo was created as assignment homework for a engineering role I applied for and reflects my thoughts at that time on a given use-case. Repo was generated using NX monorepo tool
+Hello visitor :wave: ! This repo was created as assignment homework for a engineering role I applied for and reflects my thoughts at that time on a given use-case.
 
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
 
@@ -26,7 +26,6 @@ Hello visitor :wave: ! This repo was created as assignment homework for a engine
     - [Run other tasks](#run-other-tasks)
 
 <!-- /code_chunk_output -->
-
 
 ---
 
@@ -213,7 +212,23 @@ To keep correct FIFO order create, update and delete review events
 
 ## How to
 
+### Prerequisites
+
+In order to run this project you should have following installed on your computer:
+
+- node.js 18 or higher
+- docker
+
+Run following commands:
+
+- `npm i`
+- `cp apps/product-service/.env.example apps/product-service/.env`
+- `cp apps/review-processing-service/.env.example apps/review-processing-service/.env`
+
 ### Start whole project
+
+Run `docker-compose up` to start and press ctrl+c to stop.
+Or `docker-compose up -d` (-d stands for 'detached') to start and be able to use same terminal window, `docker-compose down` to stop.
 
 ### Start just one of the services
 
@@ -230,7 +245,7 @@ Run `npx nx build ct` to build the application. The build artifacts are stored i
 
 ### Run other tasks
 
-To execute tasks with Nx use the following syntax:
+Repo uses NX monorepo tool and to execute tasks with Nx use the following syntax:
 
 ```
 npx nx <target> <project> <...options>

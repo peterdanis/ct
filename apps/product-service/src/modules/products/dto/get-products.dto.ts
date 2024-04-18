@@ -1,4 +1,4 @@
-import { IsArray, ValidateNested } from 'class-validator';
+import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { ProductDto } from './product.dto';
 
@@ -7,4 +7,9 @@ export class GetProductsDto {
   @IsArray({ each: true })
   @ValidateNested()
   products: ProductDto[];
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  paginationToken: string;
 }

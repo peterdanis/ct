@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -13,6 +15,7 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductDto } from './dto/product.dto';
 import { GetProductsDto } from './dto/get-products.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
 
 @ApiTags('products')
 @Controller({
@@ -21,15 +24,20 @@ import { GetProductsDto } from './dto/get-products.dto';
 })
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
+
   @Get()
   @ApiOkResponse({ type: GetProductsDto })
   @ApiQuery({ name: 'paginationToken', required: false, type: String })
-  async getAll(@Query('paginationToken') paginationToken?: string) {
+  async getAll(
+    @Query('paginationToken') paginationToken?: string
+  ): Promise<GetProductsDto> {
     return this.productsService.getAll(paginationToken);
   }
 
   @Post()
-  async create(@Body() createProductDto: CreateProductDto) {
+  async create(
+    @Body() createProductDto: CreateProductDto
+  ): Promise<ProductDto> {
     return this.productsService.create(createProductDto);
   }
 
@@ -42,12 +50,16 @@ export class ProductsController {
   }
 
   @Patch(':productId')
-  async update(@Param('productId') productId: string) {
-    return this.productsService.update(productId);
+  async update(
+    @Body() updateProductDto: UpdateProductDto,
+    @Param('productId') productId: string
+  ): Promise<ProductDto> {
+    return this.productsService.update(productId, updateProductDto);
   }
 
   @Delete(':productId')
-  async delete(@Param('productId') productId: string) {
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async delete(@Param('productId') productId: string): Promise<void> {
     return this.productsService.delete(productId);
   }
 }

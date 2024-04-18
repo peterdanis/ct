@@ -1,22 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { productMock } from '../../../tests/product.mocks';
-import { ProductDto } from './dto/product.dto';
 import { CreateProductDto } from './dto/create-product.dto';
-import { GetProductsDto } from './dto/get-products.dto';
+import { ProductRepository } from './products.repository';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { ProductDto } from './dto/product.dto';
 
 @Injectable()
 export class ProductsService {
-  async getAll(paginationToken?: string): Promise<GetProductsDto> {
-    return { products: [productMock] };
+  constructor(private readonly productRepository: ProductRepository) {}
+
+  async getAll(paginationToken?: string) {
+    return this.productRepository.getAll(paginationToken);
   }
 
-  async getOne(id: string): Promise<ProductDto> {
-    return productMock;
+  async getOne(productId: string) {
+    return this.productRepository.getById(productId);
   }
 
-  async create(product: CreateProductDto): Promise<void> {}
+  async create(product: CreateProductDto) {
+    return this.productRepository.create(product);
+  }
 
-  async update(id: string): Promise<void> {}
+  async update(productId: string, updatedProduct: UpdateProductDto) {
+    return this.productRepository.update(productId, updatedProduct);
+  }
 
-  async delete(id: string): Promise<void> {}
+  async delete(productId: string): Promise<void> {
+    return this.productRepository.delete(productId);
+  }
 }

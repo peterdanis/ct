@@ -1,15 +1,16 @@
-import { IsNumber, IsString, Max, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
 import { CreateProductDto } from './create-product.dto';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class ProductDto extends CreateProductDto {
   @ApiProperty()
   @IsString()
-  id: string;
+  productId: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
   @IsNumber()
+  @IsOptional()
   @Min(1)
   @Max(5)
-  averageRating: number;
+  averageRating?: number;
 }

@@ -13,7 +13,13 @@ async function bootstrap() {
     type: VersioningType.URI,
   });
   app.use(helmet());
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    })
+  );
 
   const swaggerOptions = new DocumentBuilder()
     .setTitle(name)
