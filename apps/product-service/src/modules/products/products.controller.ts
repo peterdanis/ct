@@ -5,12 +5,19 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Param,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ProductDto } from './dto/product.dto';
@@ -18,6 +25,7 @@ import { GetProductsDto } from './dto/get-products.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 @ApiTags('products')
+@ApiBadRequestResponse()
 @Controller({
   version: '1',
   path: 'products',
@@ -44,17 +52,19 @@ export class ProductsController {
 
   @Get(':productId')
   @ApiOkResponse({ type: ProductDto })
+  @ApiNotFoundResponse()
   async getByproductId(
     @Param('productId') productId: string
   ): Promise<ProductDto> {
-    return this.productsService.getOne(productId);
+    return this.productsService.getById(productId);
   }
 
   @Patch(':productId')
   @ApiOkResponse({ type: ProductDto })
+  @ApiNotFoundResponse()
   async update(
-    @Body() updateProductDto: UpdateProductDto,
-    @Param('productId') productId: string
+    @Param('productId') productId: string,
+    @Body() updateProductDto: UpdateProductDto
   ): Promise<ProductDto> {
     return this.productsService.update(productId, updateProductDto);
   }

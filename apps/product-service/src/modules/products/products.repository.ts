@@ -19,10 +19,10 @@ import {
 } from '@aws-sdk/client-dynamodb';
 
 @Injectable()
-export class ProductRepository {
+export class ProductsRepository {
   private documentClient: DynamoDBDocumentClient;
   private tableName: string;
-  private logger = new Logger(ProductRepository.name);
+  private logger = new Logger(ProductsRepository.name);
 
   constructor(private readonly sharedService: SharedService) {
     this.documentClient = this.sharedService.getDynamoDbDocumentClient();

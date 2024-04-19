@@ -1,21 +1,33 @@
 import { Injectable } from '@nestjs/common';
 import { ReviewsRepository } from './reviews.repository';
+import { UpdateReviewDto } from './dto/update-review.dto';
+import { CreateReviewDto } from './dto/create-review.dto';
 
 @Injectable()
 export class ReviewsService {
-  constructor(private readonly productRepository: ReviewsRepository) {}
+  constructor(private readonly reviewsRepository: ReviewsRepository) {}
 
-  async getAll(paginationToken?: string): Promise<{ Reviews: any[] }> {
-    return { Reviews: [] };
+  async getAll(productId: string, paginationToken?: string) {
+    return this.reviewsRepository.getAll(productId, paginationToken);
   }
 
-  async getOne(id: string): Promise<any> {
-    return 'any';
+  async getById(productId: string, reviewId: string) {
+    return this.reviewsRepository.getById(productId, reviewId);
   }
 
-  async create(review: any): Promise<void> {}
+  async create(productId: string, review: CreateReviewDto) {
+    return this.reviewsRepository.create(productId, review);
+  }
 
-  async update(id: string): Promise<void> {}
+  async update(
+    productId: string,
+    reviewId: string,
+    updatedReview: UpdateReviewDto
+  ) {
+    return this.reviewsRepository.update(productId, reviewId, updatedReview);
+  }
 
-  async delete(id: string): Promise<void> {}
+  async delete(productId: string, reviewId: string) {
+    return this.reviewsRepository.delete(productId, reviewId);
+  }
 }
