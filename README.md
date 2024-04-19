@@ -224,6 +224,8 @@ Run following commands:
 - `npm i`
 - `cp apps/product-service/.env.example apps/product-service/.env`
 - `cp apps/review-processing-service/.env.example apps/review-processing-service/.env`
+- `npx nx run-many -t build`
+- `npx nx run-many -t container`
 
 ### Start whole project
 
