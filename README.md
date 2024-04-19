@@ -228,7 +228,12 @@ Run following commands:
 ### Start whole project
 
 Run `docker-compose up` to start and press ctrl+c to stop.
-Or `docker-compose up -d` (-d stands for 'detached') to start and be able to use same terminal window, `docker-compose down` to stop.
+Or run `docker-compose up -d` (-d stands for 'detached') to start and be able to use same terminal window, `docker-compose down` to stop.
+
+After project starts-up, there are following helper UIs available:
+
+- for DynamoDB: http://localhost:8001
+- for Kafka: http://localhost:8080
 
 ### Start just one of the services
 

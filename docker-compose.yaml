@@ -2,7 +2,7 @@ version: '3.8'
 services:
   dynamodb-local:
     container_name: dynamodb-local
-    image: 'amazon/dynamodb-local:latest'
+    image: 'amazon/dynamodb-local:2.4.0'
     command: '-jar DynamoDBLocal.jar -sharedDb -inMemory'
     ports:
       - '8000:8000'
@@ -14,7 +14,7 @@ services:
 
   dynamodb-admin:
     container_name: dynamodb-admin
-    image: aaronshaf/dynamodb-admin
+    image: aaronshaf/dynamodb-admin:4.6.1
     environment:
       DYNAMO_ENDPOINT: 'http://dynamodb-local:8000'
       AWS_REGION: 'local'
@@ -25,9 +25,10 @@ services:
     depends_on:
       - dynamodb-local
 
-  dynamodb-local-init:
-    container_name: dynamodb-local-init
-    image: amazon/aws-cli
+  dynamodb-init:
+    container_name: dynamodb-init
+    image: amazon/aws-cli:2.15.39
+    init: true
     environment:
       AWS_ACCESS_KEY_ID: local
       AWS_SECRET_ACCESS_KEY: local
@@ -45,3 +46,41 @@ services:
     depends_on:
       dynamodb-local:
         condition: service_healthy
+
+  kafka:
+    container_name: kafka
+    image: 'bitnami/kafka:3.6.2'
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9094,LOCAL://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,LOCAL:PLAINTEXT
+      - KAFKA_CFG_BROKER_ID=1
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,LOCAL://localhost:9093
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_KRAFT_CLUSTER_ID=Y3Qta2Fma2EtY2x1c3Rlcg==
+    ports:
+      - 9093:9093
+
+  kafka-init:
+    container_name: kafka-init
+    image: 'bitnami/kafka:3.6.2'
+    init: true
+    command: kafka-topics.sh --create --topic test --partitions 3 --replication-factor 1 --bootstrap-server kafka:9092
+    depends_on:
+      - kafka
+
+  kafka-ui:
+    container_name: kafka-ui
+    image: 'provectuslabs/kafka-ui:v0.7.2'
+    ports:
+      - '8080:8080'
+    environment:
+      - KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_NAME=Y3Qta2Fma2EtY2x1c3Rlcg==
+    depends_on:
+      - kafka

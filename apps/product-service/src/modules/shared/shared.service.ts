@@ -14,6 +14,9 @@ export class SharedService {
         endpoint: process.env.DYNAMODB_ENDPOINT,
         table: process.env.DYNAMODB_TABLE,
       },
+      kafka: {
+        bootstrapServers: process.env.KAFKA_BOOTSTRAP_SERVERS,
+      },
     };
   }
 
