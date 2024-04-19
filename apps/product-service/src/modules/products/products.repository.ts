@@ -18,15 +18,11 @@ import {
   ReturnValue,
 } from '@aws-sdk/client-dynamodb';
 
-type ProductEntity = ProductDto & {
-  PK: string;
-  SK: string;
-};
-
 @Injectable()
 export class ProductRepository {
-  documentClient: DynamoDBDocumentClient;
-  tableName: string;
+  private documentClient: DynamoDBDocumentClient;
+  private tableName: string;
+  private logger = new Logger(ProductRepository.name);
 
   constructor(private readonly sharedService: SharedService) {
     this.documentClient = this.sharedService.getDynamoDbDocumentClient();
@@ -41,6 +37,7 @@ export class ProductRepository {
   }
 
   async create(productInput: CreateProductDto): Promise<ProductDto> {
+    this.logger.log({ productInput }, 'create.input');
     const productId = ulid();
     const product = { productId, ...productInput };
     const putItemCommand = new PutCommand({
@@ -60,7 +57,6 @@ export class ProductRepository {
   }
 
   async getById(productId: string): Promise<ProductDto> {
-    Logger.log({ productId }, 'product-db.repository.getById.input');
     const getItemCommand = new GetCommand({
       TableName: this.tableName,
       Key: this.getKeys(productId),
@@ -91,14 +87,11 @@ export class ProductRepository {
     const paginationToken = LastEvaluatedKey
       ? this.sharedService.encodeToBase64(LastEvaluatedKey)
       : undefined;
-    const products = Items.reduce((result, product) => {
-      try {
-        result.push(this.sharedService.validateAndStrip(product, ProductDto));
-      } catch (error) {
-        // Ignore given item
-      }
-      return result;
-    }, []);
+    const products = Items.reduce(
+      this.sharedService.getAllReducer(ProductDto),
+      []
+    );
+
     return {
       products,
       paginationToken,
@@ -110,6 +103,7 @@ export class ProductRepository {
       TableName: this.tableName,
       Key: this.getKeys(productId),
     });
+
     await this.documentClient.send(deleteCommand);
   }
 
@@ -117,6 +111,7 @@ export class ProductRepository {
     productId: string,
     updatedProduct: UpdateProductDto
   ): Promise<ProductDto> {
+    this.logger.log({ updatedProduct }, 'update.input');
     try {
       const attributeUpdates = {};
       const key = this.getKeys(productId);
@@ -141,6 +136,7 @@ export class ProductRepository {
       if (error instanceof ConditionalCheckFailedException) {
         throw new NotFoundException();
       }
+      throw error;
     }
   }
 }

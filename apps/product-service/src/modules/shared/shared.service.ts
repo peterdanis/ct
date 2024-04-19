@@ -1,16 +1,13 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
-import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ClassConstructor, plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 
 @Injectable()
 export class SharedService {
+  private logger = new Logger(SharedService.name);
+
   getConfig() {
     return {
       dynamoDb: {
@@ -30,6 +27,23 @@ export class SharedService {
         removeUndefinedValues: true,
       },
     });
+  }
+
+  /**
+   * Validates, strips and transforms each item. Items not adhering to DTO are excluded from the result and logged.
+   * @param dto DTO or class to validate items against
+   * @returns a function to be used in Array.reduce()
+   */
+  getAllReducer<T>(dto: ClassConstructor<T>): (arr: T[], item: T) => T[] {
+    return (finalArray, item) => {
+      try {
+        finalArray.push(this.validateAndStrip(item, dto));
+      } catch (error) {
+        // Ignore given item in output, just log - single bad db item should not break getAll endpoint
+        this.logger.error({ item, error }, 'getAllReducer.invalidDbItemFound');
+      }
+      return finalArray;
+    };
   }
 
   encodeToBase64(input: string | Record<string, unknown>) {
@@ -56,9 +70,8 @@ export class SharedService {
       whitelist: true,
     });
     if (errors.length > 0) {
-      Logger.warn('Some of the validated object did not pass validation');
-      Logger.warn(errors);
-      throw new InternalServerErrorException();
+      this.logger.warn(errors);
+      throw new Error('Some of the validated object did not pass validation');
     }
     return instance;
   }

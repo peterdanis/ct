@@ -2,6 +2,7 @@ import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import { Logger as PinoLogger } from 'nestjs-pino';
 import { name } from '../project.json';
 import { AppModule } from './app.module';
 
@@ -13,6 +14,7 @@ async function bootstrap() {
     type: VersioningType.URI,
   });
   app.use(helmet());
+  app.useLogger(app.get(PinoLogger));
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
@@ -30,7 +32,10 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
-  Logger.log(`${name} is running on ...:${port}/${globalPrefix}`);
+  Logger.log(
+    `${name} is running on ...:${port}/${globalPrefix}`,
+    'NestApplication'
+  );
 }
 
 bootstrap();
