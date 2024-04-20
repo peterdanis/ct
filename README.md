@@ -229,8 +229,8 @@ Run following commands:
 
 ### Start whole project
 
-Run `docker-compose up` to start and press ctrl+c to stop.
-Or run `docker-compose up -d` (-d stands for 'detached') to start and be able to use same terminal window, `docker-compose down` to stop.
+Run `docker-compose up --build` to start and press ctrl+c to stop.
+Or run `docker-compose up -d --build` (-d stands for 'detached') to start and be able to use same terminal window, `docker-compose down` to stop.
 
 After project starts-up, there are following helper UIs available:
 

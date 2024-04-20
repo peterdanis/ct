@@ -1,7 +1,7 @@
 {
-  "name": "kafka",
+  "name": "dto",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "libs/kafka/src",
+  "sourceRoot": "libs/dto/src",
   "projectType": "library",
   "tags": [],
   "targets": {}

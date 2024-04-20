@@ -8,7 +8,9 @@ services:
       - 8000:8000
     healthcheck:
       test: ['CMD', 'curl', 'http://localhost:8000']
-      interval: 1s
+      start_period: 15s
+      start_interval: 3s
+      interval: 60s
       timeout: 10s
       retries: 5
 
@@ -17,13 +19,14 @@ services:
     image: aaronshaf/dynamodb-admin:4.6.1
     environment:
       DYNAMO_ENDPOINT: 'http://dynamodb-local:8000'
-      AWS_REGION: 'local'
+      AWS_REGION: local
       AWS_ACCESS_KEY_ID: local
       AWS_SECRET_ACCESS_KEY: local
     ports:
       - 8001:8001
     depends_on:
-      - dynamodb-local
+      dynamodb-local:
+        condition: service_healthy
 
   dynamodb-init:
     container_name: dynamodb-init
@@ -64,6 +67,13 @@ services:
       - KAFKA_KRAFT_CLUSTER_ID=Y3Qta2Fma2EtY2x1c3Rlcg==
     ports:
       - 9093:9093
+    healthcheck:
+      test: /opt/bitnami/kafka/bin/kafka-cluster.sh cluster-id --bootstrap-server kafka:9092 || exit 1
+      start_period: 15s
+      start_interval: 3s
+      interval: 60s
+      timeout: 10s
+      retries: 5
 
   kafka-init:
     container_name: kafka-init
@@ -85,7 +95,8 @@ services:
       --bootstrap-server kafka:9092
       "
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
 
   kafka-ui:
     container_name: kafka-ui
@@ -96,26 +107,33 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_CLUSTERS_0_NAME: Y3Qta2Fma2EtY2x1c3Rlcg==
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
 
-  product-service-1:
-    container_name: product-service-1
+  product-service:
+    deploy:
+      replicas: 2
     build:
       context: .
       dockerfile: apps/product-service/Dockerfile
     ports:
-      - 3000:3000
+      - 3000-3001:3000
     environment:
       DYNAMODB_ENDPOINT: http://dynamodb-local:8000
       DYNAMODB_TABLE: products
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_REVIEW_MODIFIED_TOPIC: ct.review.modified
       KAFKA_RATING_CALCULATED_TOPIC: ct.product.rating.calculated
+      KAFKA_GROUP_ID: product-service-docker
+      KAFKA_PARTITIONS_CONSUMED_CONCURRENTLY: 10
+      KAFKA_START_FROM_BEGINNING: false
       PORT: 3000
       NODE_ENV: production
       AWS_REGION: local
       AWS_ACCESS_KEY_ID: local
       AWS_SECRET_ACCESS_KEY: local
     depends_on:
-      - kafka
-      - dynamodb-local
+      dynamodb-local:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy

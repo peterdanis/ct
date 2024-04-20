@@ -22,6 +22,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     })
   );
+  app.enableShutdownHooks();
 
   const swaggerOptions = new DocumentBuilder()
     .setTitle(name)

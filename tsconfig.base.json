@@ -15,6 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@ct/dto": ["libs/dto/src/index.ts"],
       "@ct/kafka": ["libs/kafka/src/index.ts"]
     },
     "resolveJsonModule": true

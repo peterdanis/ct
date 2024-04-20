@@ -19,6 +19,7 @@ import {
 import { GetReviewsDto } from './dto/get-reviews.dto';
 import { ProductsRepository } from '../products/products.repository';
 
+// TODO: extract to libs
 @Injectable()
 export class ReviewsRepository {
   private documentClient: DynamoDBDocumentClient;
