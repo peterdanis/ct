@@ -83,14 +83,14 @@ services:
       kafka-topics.sh
       --create
       --topic ct.review.modified
-      --partitions 3
+      --partitions 10
       --replication-factor 1
       --bootstrap-server kafka:9092
       &&
       kafka-topics.sh
       --create
       --topic ct.product.rating.calculated
-      --partitions 3
+      --partitions 10
       --replication-factor 1
       --bootstrap-server kafka:9092
       "

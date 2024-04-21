@@ -9,6 +9,7 @@ Hello visitor :wave: ! This repo was created as assignment homework for a engine
 - [CT](#ct)
   - [Overview](#overview)
   - [Assignment notes](#assignment-notes)
+    - [What has been implemented](#what-has-been-implemented)
     - [Architecture](#architecture)
     - [Caching](#caching)
       - [Cache directly in service](#cache-directly-in-service)
@@ -19,9 +20,11 @@ Hello visitor :wave: ! This repo was created as assignment homework for a engine
     - [DB](#db)
     - [Messaging](#messaging)
     - [API](#api)
+    - [IDs](#ids)
   - [How to](#how-to)
-    - [Start whole project](#start-whole-project)
-    - [Start just one of the services](#start-just-one-of-the-services)
+    - [Prerequisites](#prerequisites)
+    - [Start project](#start-project)
+    - [Start just one of the services for development purposes](#start-just-one-of-the-services-for-development-purposes)
     - [Build for production](#build-for-production)
     - [Run other tasks](#run-other-tasks)
 
@@ -76,6 +79,23 @@ TODO: add sequence diagrams
 ---
 
 ## Assignment notes
+
+### What has been implemented
+
+- two Nest.js services with 2 instances each, exposed on different ports
+- single node DynamoDB with two tables
+- single node Kafka with two topics for messaging
+- single node Redis for caching // TODO:
+- UIs for DynamoDB and Kafka (provided, not built as part of this project)
+- all linked together via docker-compose, including tables and topics creation
+- validation of incoming API requests
+- open-api spec
+- logging details of each API request
+- linking related logs via correlationId (only in API part)
+- linting
+- building Docker images for both services
+- some example unit tests // TODO:
+- some example e2e tests // TODO:
 
 ### Architecture
 
@@ -176,7 +196,7 @@ Alternative to directly storing records in cache from the product-service is to 
 
 #### DAX in front of DynamoDB
 
-Use DAX (DynamoDB Accelerator) in front of DynamoDB. I can't judge pros & cons, haven't use the service nor read its limitations.
+Use DAX (DynamoDB Accelerator) in front of DynamoDB. I can't judge pros & cons, haven't use the service nor read its limitations, but could be worthwhile to do research / PoC.
 
 #### API GW / CDN cache
 
@@ -184,29 +204,47 @@ Implementing caching in front of a service on API GW or Cloudfront / CDN level i
 
 ### DB
 
-DynamoDB provides following benefits for this use-case:
+Notes related to picking DynamoDB for this use case:
 
-- average rating calculation can be done in just a single write (no previous read necessary)
-- maintains high throughput for writing average rating calculation even in case of switching to non-FIFO messaging without record locking or transactions
-- retrieving one product and its related reviews can be done with single query (with pagination), using single table design
+- average rating calculation can be done in just a single write (no previous read necessary), with idempotence (using Kafka partition offset)
+- maintains high throughput for writing average rating calculation even in case of switching to non-FIFO messaging without record locking or transactions (but will need to figure out different idempotence mechanism)
+- retrieving one product and its related reviews can be done with single query (with pagination), using single table design, in case a new requirement of retrieving reviews (and not just average rating) together with product comes
 - consistent latency independently of number of products
 - in case of switching the service to serverless it does not need any special care
-
-Limitations:
-
-- combined size of review text + name is limited to 400 KB (max item size in DynamoDB), can be extended by using compression (store the review text compressed, un-compress on read in product-service)
+- combined size of review text + other review attributes is limited to 400 KB (max item size in DynamoDB), can be partially mitigated using compression (store the review text compressed, un-compress on read in product-service)
 
 ### Messaging
 
-Kafka provides following benefits for this use-case:
+Notes related to picking Kafka for this use case:
 
-- FIFO ordering for calculating average rating (average rating in product DB is never overwritten by delayed older message), using product ID as Kafka message key
-
-To keep correct FIFO order create, update and delete review events
+- FIFO ordering for calculating average rating (average rating in product DB is never overwritten by delayed older message) using product ID as Kafka message key
+- to keep correct FIFO order create, update and delete review events need to be in one topic and productId needs to be set as message key as well
+- currently only per message processing is implemented, to increase throughput increase number of partitions + number of allowed partition concurrency in both services
 
 ### API
 
-- REST vs RPC-like naming
+Notes on REST vs RPC-like naming:
+
+- in this case RESTful API naming was ok, but there are cases where it gets difficult to map, especially updates to PUT / PATCH
+- e.g. if you have a card, and you want to support activate, lock, change pin actions
+  - using PUT is impractical if object has a lot of properties or you don't want to allow changes on multiple attributes at once (e.g. lock and change pin)
+  - using PATCH is in my opinion better option compared to PUT, as you can isolate updates of attributes byt allowing only certain combinations of attributes via validation, but the open-api spec DTO will contain all possible attributes as optional and you need to describe combination well in description
+  - using RPC-like naming (cards/:id/activate, cards/:id/set-pin, etc.) allows to isolate DTO and routing (e.g. expose some endpoints to only a particular consumer)
+
+### IDs
+
+Notes related to picking ULID for this use case:
+
+- ULIDs are sortable
+  - allows to order reviews from newest to oldest (or vice versa) without index, using sort key (part of primary key)
+  - allows retrieval of reviews from given timeframe using `begins_with`, `between`, `<`, `>`, for querying (reviews of given product + all reviews if index would be created) or ad-hoc scanning
+  - in case of using SQL instead of DynamoDB, my current understanding is that sortable PKs helps with performance
+  - there are no strict sorting requirements, sorting capability of ULID is sufficient
+- take less space compared to UUID
+- trivial to use compared to distributed ever-increasing integer ID generation
+- revealing approx. time of creation via decoding time from ULID is not an issue in this use-case
+- only a small UX/DX advantage - ULIDs are easier to copy, as double-clicking in UI/url/terminal will select whole ID
+- again only a minimal advantage, but take less space (26 characters) in URL
 
 ---
 
@@ -219,35 +257,49 @@ In order to run this project you should have following installed on your compute
 - node.js 18 or higher
 - docker
 
-Run following commands:
+### Start project
 
-- `npm i`
-- `cp apps/product-service/.env.example apps/product-service/.env`
-- `cp apps/review-processing-service/.env.example apps/review-processing-service/.env`
-- `npx nx run-many -t build`
-- `npx nx run-many -t container`
+Run following commands once:
 
-### Start whole project
+```
+npm i
+npx nx run-many -t build
+docker-compose up --build
+```
 
-Run `docker-compose up --build` to start and press ctrl+c to stop.
+Press ctrl+c to stop.
+
+Afterwards (if you did not change code) running `docker-compose up` to start is enough.
+
 Or run `docker-compose up -d --build` (-d stands for 'detached') to start and be able to use same terminal window, `docker-compose down` to stop.
 
-After project starts-up, there are following helper UIs available:
+Following helper UIs available:
 
 - for DynamoDB: http://localhost:8001
 - for Kafka: http://localhost:8080
 
-### Start just one of the services
+### Start just one of the services for development purposes
 
-Run one of
+Run once:
+
+- `npm i`
+- `cp apps/product-service/.env.example apps/product-service/.env`
+- `cp apps/review-processing-service/.env.example apps/review-processing-service/.env`
+
+Run then run one of
 
 - `npx nx serve product-service`
 - `npx nx serve review-processing-service`
 
-to start the development server with `watch mode` enabled.
+or run both
+
+- `npx nx run-many -t serve`
+
+to start the with `watch mode` enabled.
 
 ### Build for production
 
+// TODO:
 Run `npx nx build ct` to build the application. The build artifacts are stored in the output directory (e.g. `dist/` or `build/`), ready to be deployed.
 
 ### Run other tasks
