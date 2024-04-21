@@ -6,7 +6,7 @@ import { ReviewsRepository } from './reviews.repository';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { SharedService } from '../shared/shared.service';
-import { ulid } from 'ulidx';
+import { ProductsRepository } from '../products/products.repository';
 
 @Injectable()
 export class ReviewsService implements OnModuleInit {
@@ -28,6 +28,7 @@ export class ReviewsService implements OnModuleInit {
   }
 
   async getAll(productId: string, paginationToken?: string) {
+    await this.productsRepository.getById(productId);
     return this.reviewsRepository.getAll(productId, paginationToken);
   }
 
@@ -36,6 +37,7 @@ export class ReviewsService implements OnModuleInit {
   }
 
   async create(productId: string, reviewInput: CreateReviewDto) {
+    await this.productsRepository.getById(productId);
     const review = await this.reviewsRepository.create(productId, reviewInput);
     const { reviewId, rating } = review;
     const reviewModifiedEvent: ReviewModifiedMessageDto = {

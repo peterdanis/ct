@@ -98,13 +98,20 @@ export class ProductsRepository {
     } as GetProductsDto;
   }
 
-  async delete(productId: string): Promise<void> {
+  async delete(productId: string): Promise<ProductDto> {
     const deleteCommand = new DeleteCommand({
       TableName: this.tableName,
       Key: this.getKeys(productId),
+      ReturnValues: ReturnValue.ALL_OLD,
     });
 
-    await this.documentClient.send(deleteCommand);
+    const { Attributes } = await this.documentClient.send(deleteCommand);
+
+    if (!Attributes) {
+      throw new NotFoundException();
+    }
+
+    return this.sharedService.validateAndStrip(Attributes, ProductDto);
   }
 
   async update(

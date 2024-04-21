@@ -23,7 +23,7 @@ export class ProductsService {
     return this.productsRepository.update(productId, updatedProduct);
   }
 
-  async delete(productId: string): Promise<void> {
-    return this.productsRepository.delete(productId);
+  async delete(productId: string) {
+    await this.productsRepository.delete(productId);
   }
 }

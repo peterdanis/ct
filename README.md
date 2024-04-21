@@ -89,13 +89,14 @@ TODO: add sequence diagrams
 - UIs for DynamoDB and Kafka (provided, not built as part of this project)
 - all linked together via docker-compose, including tables and topics creation
 - validation of incoming API requests
+- shared API / events DTOs
 - open-api spec
 - logging details of each API request
 - linking related logs via correlationId (only in API part)
 - linting
 - building Docker images for both services
 - some example unit tests // TODO:
-- some example e2e tests // TODO:
+- some example e2e tests
 
 ### Architecture
 

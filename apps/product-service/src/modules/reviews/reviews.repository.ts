@@ -46,7 +46,6 @@ export class ReviewsRepository {
     reviewInput: CreateReviewDto
   ): Promise<ReviewDto> {
     this.logger.log({ reviewInput }, 'create.input');
-    await this.productsRepository.getById(productId);
     const reviewId = ulid();
     const review = { productId, reviewId, ...reviewInput };
     const putItemCommand = new PutCommand({
