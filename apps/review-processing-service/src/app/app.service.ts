@@ -49,13 +49,15 @@ export class AppService implements OnModuleInit {
   }
 
   private async processMessage(message: KafkaMessage) {
-    const { value } = message;
+    const { value, offset } = message;
     const parsedValue = JSON.parse(value.toString());
     const type: ReviewModifiedType = parsedValue.type;
     let data;
     let validatedMessage;
     let reviewCount: -1 | 0 | 1;
     let reviewRatingSum: number;
+    let newReviewCount: number;
+    let newReviewRatingSum: number;
 
     try {
       const helper = (c) => validateAndStrip(parsedValue, c, this.logger);
@@ -90,13 +92,17 @@ export class AppService implements OnModuleInit {
 
     const { productId } = data;
 
-    const { reviewCount: newReviewCount, reviewRatingSum: newReviewRatingSum } =
-      await this.appRepository.update(
-        productId,
-        { reviewCount, reviewRatingSum },
-        // TODO: idempotence via offset check condition
-        {}
-      );
+    try {
+      const result = await this.appRepository.update(productId, {
+        reviewCount,
+        reviewRatingSum,
+        offset: parseInt(offset, 10),
+      });
+      newReviewCount = result.reviewCount;
+      newReviewRatingSum = result.reviewRatingSum;
+    } catch (error) {
+      this.logger.warn({ productId, data }, 'Old or duplicated message');
+    }
 
     const averageRating =
       newReviewCount > 0 ? newReviewRatingSum / newReviewCount : undefined;

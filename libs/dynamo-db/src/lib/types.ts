@@ -41,7 +41,7 @@ export type DynamoDbClientCreateItemInput<T> = Pick<
 };
 
 export type DynamoDbClientUpdateItemInput<T> = DynamoDbClientActionsInput<T> & {
-  item: Partial<T>;
+  item: Partial<T> & { offset?: number };
   operationPerItemAttribute?: Partial<Record<keyof T, AttributeAction>>;
   createIfNotExists?: boolean;
   returnOriginalValues?: boolean;

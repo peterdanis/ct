@@ -10,6 +10,7 @@ import {
 } from '@aws-sdk/lib-dynamodb';
 import {
   AttributeAction,
+  ComparisonOperator,
   ConditionalCheckFailedException,
   DynamoDBClient,
   ReturnValue,
@@ -206,9 +207,11 @@ export async function update<T>(
     returnOriginalValues,
   } = input;
   const { table, documentClient, logger } = dynamoDbClient;
-  logger.debug({ item }, 'update.input');
+  const { offset } = item;
   const key = getKeys(pk, sk);
   const attributeUpdates = {};
+  logger.debug({ item }, 'update.input');
+
   for (const [key, value] of Object.entries(item)) {
     const optionalAction =
       (operationPerItemAttribute && operationPerItemAttribute[key]) ??
@@ -217,24 +220,35 @@ export async function update<T>(
       value === undefined ? AttributeAction.DELETE : optionalAction;
     attributeUpdates[key] = { Value: value, Action: action };
   }
-  try {
-    const updateItemCommand = new UpdateCommand({
-      TableName: table,
-      Key: key,
-      AttributeUpdates: attributeUpdates,
-      ReturnValues: returnOriginalValues
-        ? ReturnValue.ALL_OLD
-        : ReturnValue.ALL_NEW,
-      Expected: createIfNotExists
-        ? {}
-        : {
-            [extractFirstKey(key)]: {
-              Exists: true,
-              Value: key[extractFirstKey(key)],
-            },
-          },
-    });
 
+  const expected: Record<string, unknown> = {};
+  if (!createIfNotExists) {
+    expected[extractFirstKey(key)] = {
+      Exists: true,
+      Value: key[extractFirstKey(key)],
+    };
+  }
+  // Serves as idempotence check - offset should be always increasing
+  // as long as there are no changes to number of partitions or partitioner logic
+  // TODO: use map of partition:offset to support changing partitions
+  if (offset) {
+    expected.offset = {
+      Value: offset,
+      ComparisonOperator: ComparisonOperator.LT,
+    };
+  }
+
+  const updateItemCommand = new UpdateCommand({
+    TableName: table,
+    Key: key,
+    AttributeUpdates: attributeUpdates,
+    ReturnValues: returnOriginalValues
+      ? ReturnValue.ALL_OLD
+      : ReturnValue.ALL_NEW,
+    Expected: expected,
+  });
+
+  try {
     const { Attributes } = await documentClient.send(updateItemCommand);
 
     return validateAndStrip(Attributes, dto, logger);

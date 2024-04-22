@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from './config.service';
 import {
   DynamoDbClient,
@@ -6,35 +6,13 @@ import {
   getDynamoDbClient,
   update,
 } from '@ct/dynamo-db';
-import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import {
-  AttributeAction,
-  AttributeValueUpdate,
-  ConditionalCheckFailedException,
-  ReturnValue,
-} from '@aws-sdk/client-dynamodb';
-import { extractFirstKey, validateAndStrip } from '@ct/utils';
-import { ReviewModifiedType } from '@ct/dto';
-import {
-  IsNotEmpty,
-  IsNumber,
-  IsString,
-  ValidateNested,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-
-class Offsets {
-  [key: number]: number;
-}
+import { AttributeAction } from '@aws-sdk/client-dynamodb';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 class RatingDto {
   @IsString()
   @IsNotEmpty()
   productId: string;
-
-  // @Exi
-  // @Type(() => Offsets)
-  // offsets: Offsets;
 
   @IsNumber()
   reviewCount: number;
@@ -71,7 +49,7 @@ export class AppRepository {
     };
   }
 
-  async update(productId: string, item, offsets: Offsets): Promise<RatingDto> {
+  async update(productId: string, item): Promise<RatingDto> {
     return update({
       ...this.defaultOptions,
       pk: productId,
