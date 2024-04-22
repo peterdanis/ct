@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -25,9 +26,11 @@ import {
   CreateProductDto,
   UpdateProductDto,
 } from '@ct/dto';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 
 @ApiTags('products')
 @ApiBadRequestResponse()
+@UseInterceptors(CacheInterceptor)
 @Controller({
   version: '1',
   path: 'products',
@@ -38,6 +41,7 @@ export class ProductsController {
   @Get()
   @ApiOkResponse({ type: GetProductsDto })
   @ApiQuery({ name: 'paginationToken', required: false, type: String })
+  @CacheTTL(2) // decrease cache TTL
   async getAll(
     @Query('paginationToken') paginationToken?: string
   ): Promise<GetProductsDto> {

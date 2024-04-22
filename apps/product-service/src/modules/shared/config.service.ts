@@ -6,6 +6,7 @@ export class ConfigService {
     endpoint: process.env.DYNAMODB_ENDPOINT,
     table: process.env.DYNAMODB_TABLE,
   };
+
   kafka = {
     brokers: process.env.KAFKA_BOOTSTRAP_SERVERS.split(','),
     ratingCalculatedTopic: process.env.KAFKA_RATING_CALCULATED_TOPIC,
@@ -18,5 +19,13 @@ export class ConfigService {
       10
     ),
     source: 'product/product-service',
+  };
+
+  redis = {
+    ttl: parseInt(process.env.REDIS_TTL),
+    socket: {
+      host: process.env.REDIS_HOST,
+      port: parseInt(process.env.REDIS_PORT),
+    },
   };
 }

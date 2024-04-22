@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -25,9 +26,11 @@ import {
   CreateReviewDto,
   UpdateReviewDto,
 } from '@ct/dto';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 
 @ApiTags('reviews')
 @ApiBadRequestResponse()
+@UseInterceptors(CacheInterceptor)
 @Controller({
   version: '1',
   path: 'products/:productId/reviews',

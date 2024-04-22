@@ -5,6 +5,10 @@ import { ReviewProcessingModule } from './modules/review-processing/review-proce
 import { SharedModule } from './modules/shared/shared.module';
 import { LoggerModule } from 'nestjs-pino';
 import { ulid } from 'ulidx';
+import { CacheModule } from '@nestjs/cache-manager';
+import { RedisClientOptions } from 'redis';
+import { ConfigService } from './modules/shared/config.service';
+import { redisStore } from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -23,6 +27,18 @@ import { ulid } from 'ulidx';
           },
         };
       },
+    }),
+    CacheModule.registerAsync<RedisClientOptions>({
+      inject: [ConfigService],
+      // TODO: figure out version incompatibility
+      // @ts-ignore
+      useFactory: async (configService: ConfigService) => ({
+        store: await redisStore({
+          ttl: configService.redis.ttl,
+          socket: configService.redis.socket,
+        }),
+      }),
+      isGlobal: true,
     }),
   ],
 })

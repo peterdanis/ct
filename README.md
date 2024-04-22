@@ -85,8 +85,8 @@ TODO: add sequence diagrams
 - two Nest.js services with 2 instances each, exposed on different ports
 - single node DynamoDB with two tables
 - single node Kafka with two topics for messaging
-- single node Redis for caching // TODO:
-- UIs for DynamoDB and Kafka (provided, not built as part of this project)
+- single node Redis for caching
+- UIs for DynamoDB, Kafka, OpenApi, Redis (provided, not built as part of this project)
 - all linked together via docker-compose, including tables and topics creation
 - validation of incoming API requests
 - shared API / events DTOs
@@ -278,8 +278,10 @@ Or run `docker-compose up -d --build` (-d stands for 'detached') to start and be
 
 Following helper UIs available:
 
+- for API: http://localhost:3000/docs
 - for DynamoDB: http://localhost:8001
 - for Kafka: http://localhost:8080
+- for Redis: http://localhost:8081/
 
 ### Start just one of the services for development purposes
 

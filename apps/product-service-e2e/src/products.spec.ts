@@ -57,12 +57,12 @@ describe('GET /products', () => {
         break;
       }
       await Promise.all(
-        new Array(1000).fill(undefined).map(async () => createProduct())
+        new Array(3000).fill(undefined).map(async () => createProduct())
       );
     }
 
     expect(paginationToken).toBeDefined();
-  });
+  }, 60000); // increase timeout due to cache
 
   it('should return 400 when invalid paginationToken is used', async () => {
     const { status } = await get(`/products?paginationToken=invalid`);

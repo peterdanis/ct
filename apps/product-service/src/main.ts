@@ -24,6 +24,7 @@ async function bootstrap() {
   );
   app.enableShutdownHooks();
 
+  // TODO: disable for production use. Build open-api spec file during build instead.
   const swaggerOptions = new DocumentBuilder()
     .setTitle(name)
     .setVersion('1.0')
