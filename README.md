@@ -90,6 +90,7 @@ TODO: add sequence diagrams
 - all linked together via docker-compose, including tables and topics creation
 - validation of incoming API requests
 - shared API / events DTOs
+- shared DynamoDB lib suitable for three shaking (for Lambda)
 - open-api spec
 - logging details of each API request
 - linking related logs via correlationId (only in API part)

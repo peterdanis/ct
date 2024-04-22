@@ -3,11 +3,11 @@ import {
   axiosDelete,
   createProduct,
   createProductBody,
-  extractFirstKey,
   get,
   patch,
   post,
 } from './utils';
+import { extractFirstKey } from '@ct/utils';
 
 let productId: string;
 
@@ -48,12 +48,17 @@ describe('GET /products', () => {
 
   it('should return paginationToken when there are a lot of products', async () => {
     let paginationToken;
+
     while (!paginationToken) {
+      const { data } = await get(`/products`);
+      paginationToken = data.paginationToken;
+
+      if (paginationToken) {
+        break;
+      }
       await Promise.all(
         new Array(1000).fill(undefined).map(async () => createProduct())
       );
-      const { data } = await get(`/products`);
-      paginationToken = data.paginationToken;
     }
 
     expect(paginationToken).toBeDefined();

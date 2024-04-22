@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiQuery,
@@ -44,7 +45,7 @@ export class ProductsController {
   }
 
   @Post()
-  @ApiOkResponse({ type: ProductDto })
+  @ApiCreatedResponse({ type: ProductDto })
   async create(
     @Body() createProductDto: CreateProductDto
   ): Promise<ProductDto> {

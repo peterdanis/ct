@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiCreatedResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiQuery,
@@ -45,7 +46,7 @@ export class ReviewsController {
   }
 
   @Post()
-  @ApiOkResponse({ type: ReviewDto })
+  @ApiCreatedResponse({ type: ReviewDto })
   @ApiNotFoundResponse()
   async create(
     @Param('productId') productId: string,

@@ -1,9 +1,10 @@
 import { ConsumerService } from '@ct/kafka';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { SharedService } from '../shared/shared.service';
+import { ConfigService } from '../shared/config.service';
 import { KafkaMessage } from 'kafkajs';
-import { ProductsRepository } from '../products/products.repository';
+import { ProductsRepository } from '../shared/products.repository';
 import { RatingCalculatedData, RatingCalculatedMessageDto } from '@ct/dto';
+import { validateAndStrip } from '@ct/utils';
 
 @Injectable()
 export class ReviewProcessingService implements OnModuleInit {
@@ -11,13 +12,13 @@ export class ReviewProcessingService implements OnModuleInit {
 
   constructor(
     private readonly consumerService: ConsumerService,
-    private readonly sharedService: SharedService,
+    private readonly configService: ConfigService,
     private readonly productsRepository: ProductsRepository
   ) {}
 
   async onModuleInit() {
     const { ratingCalculatedTopic, brokers, groupId } =
-      this.sharedService.config.kafka;
+      this.configService.kafka;
 
     const consumerConfig = {
       groupId,
@@ -41,9 +42,10 @@ export class ReviewProcessingService implements OnModuleInit {
     let data: RatingCalculatedData;
 
     try {
-      const validatedMessage = this.sharedService.validateAndStrip(
+      const validatedMessage = validateAndStrip(
         parsedValue,
-        RatingCalculatedMessageDto
+        RatingCalculatedMessageDto,
+        this.logger
       );
       data = validatedMessage.data;
     } catch (error) {

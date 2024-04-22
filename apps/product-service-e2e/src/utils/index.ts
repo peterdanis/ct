@@ -8,8 +8,6 @@ import {
 
 const baseURL = 'http://localhost:3000/api/v1';
 
-export const extractFirstKey = (object) => Object.keys(object)[0];
-
 export const {
   get,
   post,
@@ -17,8 +15,14 @@ export const {
   delete: axiosDelete,
 } = axios.create({
   baseURL,
-  transformResponse: (res) =>
-    typeof res === 'string' && res.length > 0 ? JSON.parse(res) : undefined,
+  transformResponse: (res) => {
+    try {
+      const result = JSON.parse(res);
+      return result;
+    } catch (error) {
+      // do nothing
+    }
+  },
   validateStatus: () => true,
 });
 

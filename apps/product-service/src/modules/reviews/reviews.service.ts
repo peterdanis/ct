@@ -1,9 +1,9 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Producer, ProducerService } from '@ct/kafka';
 import { CreateReviewDto, ReviewModifiedType, UpdateReviewDto } from '@ct/dto';
-import { ReviewsRepository } from './reviews.repository';
-import { SharedService } from '../shared/shared.service';
-import { ProductsRepository } from '../products/products.repository';
+import { ReviewsRepository } from '../shared/reviews.repository';
+import { ConfigService } from '../shared/config.service';
+import { ProductsRepository } from '../shared/products.repository';
 
 @Injectable()
 export class ReviewsService implements OnModuleInit {
@@ -13,12 +13,12 @@ export class ReviewsService implements OnModuleInit {
   constructor(
     private readonly reviewsRepository: ReviewsRepository,
     private readonly producerService: ProducerService,
-    private readonly sharedService: SharedService,
+    private readonly configService: ConfigService,
     private readonly productsRepository: ProductsRepository
   ) {}
 
   async onModuleInit() {
-    const { reviewModifiedTopic, brokers } = this.sharedService.config.kafka;
+    const { reviewModifiedTopic, brokers } = this.configService.kafka;
     this.reviewModifiedTopic = reviewModifiedTopic;
 
     const kafkaConfig = { brokers };
@@ -26,6 +26,7 @@ export class ReviewsService implements OnModuleInit {
   }
 
   async getAll(productId: string, paginationToken?: string) {
+    // TODO: return { reviews: [] } instead of 404 to save one DB call
     await this.productsRepository.getById(productId);
     return this.reviewsRepository.getAll(productId, paginationToken);
   }
@@ -40,7 +41,7 @@ export class ReviewsService implements OnModuleInit {
 
     const { reviewId, rating } = review;
     const event = this.producerService.createReviewModifiedEvent(
-      this.sharedService.config.kafka.source,
+      this.configService.kafka.source,
       ReviewModifiedType.created,
       { productId, reviewId, newRating: rating }
     );
@@ -71,7 +72,7 @@ export class ReviewsService implements OnModuleInit {
     if (isRatingUpdated) {
       const { rating: oldRating } = review;
       const event = this.producerService.createReviewModifiedEvent(
-        this.sharedService.config.kafka.source,
+        this.configService.kafka.source,
         ReviewModifiedType.updated,
         {
           productId,
@@ -93,7 +94,7 @@ export class ReviewsService implements OnModuleInit {
     const { rating } = await this.reviewsRepository.delete(productId, reviewId);
 
     const event = this.producerService.createReviewModifiedEvent(
-      this.sharedService.config.kafka.source,
+      this.configService.kafka.source,
       ReviewModifiedType.deleted,
       { productId, reviewId, oldRating: rating }
     );

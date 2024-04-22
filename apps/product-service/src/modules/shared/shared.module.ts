@@ -1,9 +1,11 @@
 import { Global, Module } from '@nestjs/common';
-import { SharedService } from './shared.service';
+import { ConfigService } from './config.service';
+import { ProductsRepository } from './products.repository';
+import { ReviewsRepository } from './reviews.repository';
 
 @Global()
 @Module({
-  providers: [SharedService],
-  exports: [SharedService],
+  providers: [ConfigService, ProductsRepository, ReviewsRepository],
+  exports: [ConfigService, ProductsRepository, ReviewsRepository],
 })
 export class SharedModule {}

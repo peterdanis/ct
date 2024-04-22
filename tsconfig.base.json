@@ -16,7 +16,9 @@
     "baseUrl": ".",
     "paths": {
       "@ct/dto": ["libs/dto/src/index.ts"],
-      "@ct/kafka": ["libs/kafka/src/index.ts"]
+      "@ct/dynamo-db": ["libs/dynamo-db/src/index.ts"],
+      "@ct/kafka": ["libs/kafka/src/index.ts"],
+      "@ct/utils": ["libs/utils/src/index.ts"]
     },
     "resolveJsonModule": true
   },

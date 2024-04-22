@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { ReviewsController } from './reviews.controller';
-import { ReviewsRepository } from './reviews.repository';
-import { ProductsRepository } from '../products/products.repository';
+import { ReviewsRepository } from '../shared/reviews.repository';
+import { ProductsRepository } from '../shared/products.repository';
 import { KafkaModule } from '@ct/kafka';
 
 @Module({
