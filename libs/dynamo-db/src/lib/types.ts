@@ -1,6 +1,7 @@
 import type { Logger } from '@nestjs/common';
 import type { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { ClassConstructor } from 'class-transformer';
+import { AttributeAction } from '@aws-sdk/client-dynamodb';
 
 export type DynamoDbClient = {
   table: string;
@@ -41,5 +42,7 @@ export type DynamoDbClientCreateItemInput<T> = Pick<
 
 export type DynamoDbClientUpdateItemInput<T> = DynamoDbClientActionsInput<T> & {
   item: Partial<T>;
+  operationPerItemAttribute?: Partial<Record<keyof T, AttributeAction>>;
+  createIfNotExists?: boolean;
   returnOriginalValues?: boolean;
 };

@@ -2,6 +2,7 @@ import {
   Contains,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   Max,
   Min,
@@ -19,10 +20,11 @@ export class RatingCalculatedData {
   @IsNotEmpty()
   productId: string;
 
+  @IsOptional()
   @IsNumber()
   @Min(1)
   @Max(5)
-  averageRating: number;
+  averageRating?: number;
 }
 
 export class RatingCalculatedMessageDto extends EventDto<RatingCalculatedData> {

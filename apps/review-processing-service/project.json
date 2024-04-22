@@ -5,6 +5,16 @@
   "projectType": "application",
   "tags": [],
   "targets": {
+    "container": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": ".",
+        "commands": [
+          "docker build . -f apps/${NX_TASK_TARGET_PROJECT}/Dockerfile"
+        ],
+        "parallel": false
+      }
+    },
     "serve": {
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",

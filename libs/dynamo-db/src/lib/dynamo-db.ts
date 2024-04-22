@@ -9,6 +9,7 @@ import {
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import {
+  AttributeAction,
   ConditionalCheckFailedException,
   DynamoDBClient,
   ReturnValue,
@@ -116,7 +117,7 @@ export async function query<T>(
     ? decodeFromBase64(inputPaginationToken)
     : undefined;
 
-  // TODO: extract to input
+  // TODO: extract key conditions to input
   const queryCommand = new QueryCommand({
     TableName: table,
     ExclusiveStartKey: exclusiveStartKey,
@@ -170,45 +171,6 @@ export async function create<T>(
   return validateAndStrip(item, dto, logger);
 }
 
-export async function update<T>(
-  input: DynamoDbClientUpdateItemInput<T>
-): Promise<T> {
-  const { dynamoDbClient, dto, pk, item, getKeys, sk, returnOriginalValues } =
-    input;
-  const { table, documentClient, logger } = dynamoDbClient;
-  logger.debug({ item }, 'update.input');
-  try {
-    const attributeUpdates = {};
-    const key = getKeys(pk, sk);
-    for (const [key, value] of Object.entries(item)) {
-      attributeUpdates[key] = { Value: value };
-    }
-    const updateItemCommand = new UpdateCommand({
-      TableName: table,
-      Key: key,
-      AttributeUpdates: attributeUpdates,
-      ReturnValues: returnOriginalValues
-        ? ReturnValue.ALL_OLD
-        : ReturnValue.ALL_NEW,
-      Expected: {
-        [extractFirstKey(key)]: {
-          Exists: true,
-          Value: key.PK,
-        },
-      },
-    });
-
-    const { Attributes } = await documentClient.send(updateItemCommand);
-
-    return validateAndStrip(Attributes, dto, logger);
-  } catch (error) {
-    if (error instanceof ConditionalCheckFailedException) {
-      throw new NotFoundException();
-    }
-    throw error;
-  }
-}
-
 export async function deleteItem<T>(
   input: DynamoDbClientActionsInput<T>
 ): Promise<T> {
@@ -227,4 +189,59 @@ export async function deleteItem<T>(
   }
 
   return validateAndStrip(Attributes, dto, logger);
+}
+
+export async function update<T>(
+  input: DynamoDbClientUpdateItemInput<T>
+): Promise<T> {
+  const {
+    dynamoDbClient,
+    dto,
+    pk,
+    sk,
+    getKeys,
+    item,
+    operationPerItemAttribute,
+    createIfNotExists,
+    returnOriginalValues,
+  } = input;
+  const { table, documentClient, logger } = dynamoDbClient;
+  logger.debug({ item }, 'update.input');
+  const key = getKeys(pk, sk);
+  const attributeUpdates = {};
+  for (const [key, value] of Object.entries(item)) {
+    const optionalAction =
+      (operationPerItemAttribute && operationPerItemAttribute[key]) ??
+      AttributeAction.PUT;
+    const action =
+      value === undefined ? AttributeAction.DELETE : optionalAction;
+    attributeUpdates[key] = { Value: value, Action: action };
+  }
+  try {
+    const updateItemCommand = new UpdateCommand({
+      TableName: table,
+      Key: key,
+      AttributeUpdates: attributeUpdates,
+      ReturnValues: returnOriginalValues
+        ? ReturnValue.ALL_OLD
+        : ReturnValue.ALL_NEW,
+      Expected: createIfNotExists
+        ? {}
+        : {
+            [extractFirstKey(key)]: {
+              Exists: true,
+              Value: key[extractFirstKey(key)],
+            },
+          },
+    });
+
+    const { Attributes } = await documentClient.send(updateItemCommand);
+
+    return validateAndStrip(Attributes, dto, logger);
+  } catch (error) {
+    if (error instanceof ConditionalCheckFailedException) {
+      throw new NotFoundException();
+    }
+    throw error;
+  }
 }

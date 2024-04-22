@@ -2,6 +2,8 @@ import { Injectable, Logger, OnApplicationShutdown } from '@nestjs/common';
 import { Kafka, Producer as KafkaProducer, Partitioners } from 'kafkajs';
 import { ulid } from 'ulidx';
 import {
+  RatingCalculatedData,
+  RatingCalculatedType,
   ReviewCreatedData,
   ReviewDeletedData,
   ReviewModifiedType,
@@ -81,6 +83,22 @@ export class ProducerService implements OnApplicationShutdown {
       : T extends ReviewModifiedType.deleted
       ? ReviewDeletedData
       : never
+  ) {
+    return {
+      id: ulid(),
+      source,
+      type,
+      time: new Date().toISOString(),
+      specversion: '1.0',
+      data,
+    };
+  }
+
+  // TODO: Extract to separate lib
+  createRatingCalculatedEvent<T extends RatingCalculatedType>(
+    source: string,
+    type: T,
+    data: RatingCalculatedData
   ) {
     return {
       id: ulid(),

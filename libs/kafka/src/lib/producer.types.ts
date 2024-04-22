@@ -14,7 +14,10 @@ export type ProducerServiceOptions = {
 };
 
 type Message = Omit<KafkaMessage, 'value'> & {
-  event: ReturnType<ProducerService['createReviewModifiedEvent']>;
+  event: ReturnType<
+    | ProducerService['createReviewModifiedEvent']
+    | ProducerService['createRatingCalculatedEvent']
+  >;
 };
 
 export type Producer = {
