@@ -25,7 +25,8 @@ Hello visitor :wave: ! This repo was created as assignment homework for a engine
     - [Prerequisites](#prerequisites)
     - [Start project](#start-project)
     - [Start just one of the services for development purposes](#start-just-one-of-the-services-for-development-purposes)
-    - [Build for production](#build-for-production)
+    - [Test](#test)
+    - [Build](#build)
     - [Run other tasks](#run-other-tasks)
 
 <!-- /code_chunk_output -->
@@ -74,8 +75,6 @@ Kafka <--> RS
 RS -.- rdb
 ```
 
-TODO: add sequence diagrams
-
 ---
 
 ## Assignment notes
@@ -96,21 +95,30 @@ TODO: add sequence diagrams
 - linking related logs via correlationId (only in API part)
 - linting
 - building Docker images for both services
-- some example unit tests // TODO:
-- some example e2e tests
+- some example e2e tests (I skipped unit tests, but I would not leave real world project without solid unit test coverage)
 
 ### Architecture
 
-Alternative to writing to DB, cache and Kafka during product / review creation/modification/deletion would be to use outbox pattern with CDC (DynamoDB Streams + AWS Lambda):
+Limitation of above design (and as-is implementation) is risk of losing events when Kafka becomes unavailable during review modification. Alternative to writing to multiple places (DB, Kafka and potentially cache) and handling exceptions during review creation/modification/deletion request is to use outbox pattern with CDC (DynamoDB Streams with some combination of Lambda / Kinesis / EventBridge pipes + SQS):
 
-- in product-service write only to DB
-- DynamoDB will fire event
-- AWS Lambda will trigger, process the event and write to Cache
-- review-processing-service Lambda will trigger, process the event and write to its own DynamoDB
-- DynamoDB will fire event
-- product-service Lambda will trigger, process the event and update rating in DB
+```mermaid
+---
+title: "Outbox alternative - review modified flow"
+---
+flowchart TD
 
-TODO: add sequence diagrams for different cases - adding/modifying a review, adding a new product
+r(Request)
+ps(Product service)
+pdb[(DynamoDB)]
+ebp1(EventBridge pipes)
+sqs1(SQS)
+rs(Review processing service - Lambda or k8s)
+rdb[(DynamoDB)]
+ebp2(EventBridge pipes)
+sqs2(SQS)
+
+r --> ps -->|save review| pdb -->|DynamoDB Streams| ebp1 --> sqs1 --> rs -->|calculate and save to DB| rdb -->|DynamoDB Streams| ebp2 --> sqs2 --> ps
+```
 
 ### Caching
 
@@ -302,10 +310,15 @@ or run both
 
 to start the with `watch mode` enabled.
 
-### Build for production
+### Test
 
-// TODO:
-Run `npx nx build ct` to build the application. The build artifacts are stored in the output directory (e.g. `dist/` or `build/`), ready to be deployed.
+Run `npx nx test product-service-e2e` to run example e2e tests.
+
+### Build
+
+Run `npx nx run-many -t build` to build the application. The build artifacts are stored in the output directory (`dist/`).
+
+Run `npx nx run-many -t container` to build containers for application. This is not necessary as provided docker-compose file contains build instructions.
 
 ### Run other tasks
 
