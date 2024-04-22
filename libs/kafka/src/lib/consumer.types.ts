@@ -5,10 +5,12 @@ export type ConsumerServiceOptions = {
   kafkaConfig: { brokers: string[] } & Omit<KafkaConfig, 'brokers'>;
 };
 
+export type OnMessage = (message: KafkaMessage) => Promise<void>;
+
 export type Consumer = {
   subscribe: (
     topic: string,
-    onMessage: (message: KafkaMessage) => Promise<void>,
+    onMessage: OnMessage,
     options?: { fromBeginning: boolean; partitionsConsumedConcurrently: number }
   ) => Promise<void>;
 };

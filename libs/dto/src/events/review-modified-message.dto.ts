@@ -1,30 +1,22 @@
 import { Type } from 'class-transformer';
 import {
-  IsDateString,
-  IsEnum,
+  Contains,
   IsInt,
   IsNotEmpty,
   IsString,
+  Max,
+  Min,
   ValidateNested,
 } from 'class-validator';
-import type { CloudEventV1 } from 'cloudevents';
+import { EventDto } from './event.dto';
 
-export enum ReviewModifiedAction {
-  CREATED = 'created',
-  UPDATED = 'updated',
-  DELETED = 'deleted',
+export enum ReviewModifiedType {
+  created = 'com.ct.product.review.created',
+  updated = 'com.ct.product.review.updated',
+  deleted = 'com.ct.product.review.deleted',
 }
 
-type Attributes =
-  | 'id'
-  | 'type'
-  | 'source'
-  | 'specversion'
-  | 'subject'
-  | 'time'
-  | 'data';
-
-class ReviewModifiedData {
+export class ReviewData {
   @IsString()
   @IsNotEmpty()
   productId: string;
@@ -32,43 +24,52 @@ class ReviewModifiedData {
   @IsString()
   @IsNotEmpty()
   reviewId: string;
-
-  @IsInt()
-  rating: number;
-
-  @IsEnum(ReviewModifiedAction)
-  action: ReviewModifiedAction;
 }
 
-export class ReviewModifiedMessageDto
-  implements Pick<CloudEventV1<ReviewModifiedData>, Attributes>
-{
-  @IsString()
-  @IsNotEmpty()
-  id: string;
+export class ReviewCreatedData extends ReviewData {
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  newRating: number;
+}
 
-  @IsString()
-  @IsNotEmpty()
-  type: string;
-
-  @IsString()
-  @IsNotEmpty()
-  source: string;
-
-  @IsString()
-  @IsNotEmpty()
-  specversion: string;
-
-  @IsDateString()
-  @IsNotEmpty()
-  time: string;
+export class ReviewCreatedMessageDto extends EventDto<ReviewCreatedData> {
+  @Contains(ReviewModifiedType.created)
+  type: ReviewModifiedType.created;
 
   @ValidateNested()
-  @Type(() => ReviewModifiedData)
-  data: ReviewModifiedData;
+  @Type(() => ReviewCreatedData)
+  data: ReviewCreatedData;
+}
 
-  // TODO: decide whether to include or not
-  // @IsString()
-  // @IsNotEmpty()
-  // correlationId: string;
+export class ReviewUpdatedData extends ReviewCreatedData {
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  oldRating: number;
+}
+
+export class ReviewUpdatedMessageDto extends EventDto<ReviewCreatedData> {
+  @Contains(ReviewModifiedType.updated)
+  type: ReviewModifiedType.updated;
+
+  @ValidateNested()
+  @Type(() => ReviewUpdatedData)
+  data: ReviewUpdatedData;
+}
+
+export class ReviewDeletedData extends ReviewData {
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  oldRating: number;
+}
+
+export class ReviewDeletedMessageDto extends EventDto<ReviewDeletedData> {
+  @Contains(ReviewModifiedType.deleted)
+  type: ReviewModifiedType.deleted;
+
+  @ValidateNested()
+  @Type(() => ReviewDeletedData)
+  data: ReviewDeletedData;
 }

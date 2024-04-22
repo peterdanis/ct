@@ -1,55 +1,12 @@
 import { Injectable, Logger, OnApplicationShutdown } from '@nestjs/common';
-import { Kafka, Consumer as KafkaConsumer } from 'kafkajs';
-import { Consumer, ConsumerServiceOptions } from './consumer.types';
+import { EachMessageHandler, Kafka, Consumer as KafkaConsumer } from 'kafkajs';
+import { Consumer, ConsumerServiceOptions, OnMessage } from './consumer.types';
 
 @Injectable()
 export class ConsumerService implements OnApplicationShutdown {
   private readonly kafkas: Map<string, Kafka> = new Map();
   private readonly consumers: KafkaConsumer[] = [];
-
-  private createSubscribe(consumer: KafkaConsumer, logger: Logger): Consumer {
-    return {
-      /**
-       * **Warning!** Will block service startup if this function is awaited
-       * in onModuleInit method and topic is not available
-       */
-      subscribe: async (topic, onMessage, options?) => {
-        await consumer.subscribe({
-          topics: [topic],
-          fromBeginning: options?.fromBeginning || false,
-        });
-        await consumer.run({
-          partitionsConsumedConcurrently:
-            options?.partitionsConsumedConcurrently || 10,
-          autoCommit: false,
-          // TODO: add batch processing method for better performance - e.g. batching writes to DB instead of waiting for each message
-          eachMessage: async ({ message, partition }) => {
-            logger.debug(
-              {
-                partition,
-                offset: message.offset,
-              },
-              'Processing message'
-            );
-            try {
-              await onMessage(message);
-              const offsetToCommit = parseInt(message.offset, 10) + 1;
-              consumer.commitOffsets([
-                {
-                  topic,
-                  partition,
-                  offset: offsetToCommit.toString(),
-                },
-              ]);
-            } catch (error) {
-              logger.error(error);
-              throw error;
-            }
-          },
-        });
-      },
-    };
-  }
+  private readonly logger = new Logger(ConsumerService.name);
 
   /**
    * **Warning!** Will block service startup if this function is awaited
@@ -67,31 +24,83 @@ export class ConsumerService implements OnApplicationShutdown {
     const { kafkaConfig, consumerConfig } = options;
     const { brokers } = kafkaConfig;
     const key = `${brokers.join(';')}`;
-    const logger = new Logger(`KafkaConsumer:${key}`);
 
     let kafka = this.kafkas.get(key);
     if (!kafka) {
       kafka = new Kafka(kafkaConfig);
     }
+    // TODO: potentially implement rackId to lower cross AZ traffic & latency
     const consumer = kafka.consumer(consumerConfig);
 
     consumer.on('consumer.crash', async (crashEvent) => {
-      logger.warn(crashEvent, 'Consumer crashed, reconnecting');
+      this.logger.warn(crashEvent, 'Consumer crashed, reconnecting');
       await consumer.connect();
     });
 
     consumer.on('consumer.connect', () => {
-      logger.log('Consumer connected');
+      this.logger.log('Consumer connected');
     });
 
     consumer.on('consumer.commit_offsets', (commitOffsetEvent) => {
-      logger.debug(commitOffsetEvent, 'Committed offset');
+      this.logger.debug(commitOffsetEvent, 'Committed offset');
     });
 
     await consumer.connect();
     this.consumers.push(consumer);
 
-    return this.createSubscribe(consumer, logger);
+    return this.createCustomConsumer(consumer);
+  }
+
+  private createCustomConsumer(consumer: KafkaConsumer): Consumer {
+    return {
+      /**
+       * **Warning!** Will block service startup if this function is awaited
+       * in onModuleInit method and topic is not available
+       */
+      subscribe: async (topic, onMessage, options?) => {
+        await consumer.subscribe({
+          topics: [topic],
+          fromBeginning: options?.fromBeginning || false,
+        });
+        await consumer.run({
+          partitionsConsumedConcurrently:
+            options?.partitionsConsumedConcurrently || 10,
+          autoCommit: false,
+          // TODO: add batch processing method for better performance - e.g. batching writes to DB instead of waiting for each message
+          eachMessage: this.eachMessage(consumer, topic, onMessage),
+        });
+      },
+    };
+  }
+
+  private eachMessage(
+    consumer: KafkaConsumer,
+    topic: string,
+    onMessage: OnMessage
+  ): EachMessageHandler {
+    return async ({ message, partition }) => {
+      this.logger.debug(
+        {
+          partition,
+          offset: message.offset,
+        },
+        'Processing message'
+      );
+      try {
+        await onMessage(message);
+        const offsetToCommit = parseInt(message.offset, 10) + 1;
+        await consumer.commitOffsets([
+          {
+            topic,
+            partition,
+            offset: offsetToCommit.toString(),
+          },
+        ]);
+      } catch (error) {
+        this.logger.error(error);
+        throw error;
+      }
+    };
   }
 
   async onApplicationShutdown() {

@@ -18,10 +18,12 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { ReviewsService } from './reviews.service';
-import { CreateReviewDto } from './dto/create-review.dto';
-import { GetReviewsDto } from './dto/get-reviews.dto';
-import { ReviewDto } from './dto/review.dto';
-import { UpdateReviewDto } from './dto/update-review.dto';
+import {
+  GetReviewsDto,
+  ReviewDto,
+  CreateReviewDto,
+  UpdateReviewDto,
+} from '@ct/dto';
 
 @ApiTags('reviews')
 @ApiBadRequestResponse()

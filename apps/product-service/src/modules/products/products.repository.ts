@@ -8,15 +8,17 @@ import {
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { ulid } from 'ulidx';
-import { ProductDto } from './dto/product.dto';
-import { CreateProductDto } from './dto/create-product.dto';
-import { GetProductsDto } from './dto/get-products.dto';
 import { SharedService } from '../shared/shared.service';
-import { UpdateProductDto } from './dto/update-product.dto';
 import {
   ConditionalCheckFailedException,
   ReturnValue,
 } from '@aws-sdk/client-dynamodb';
+import {
+  CreateProductDto,
+  GetProductsDto,
+  ProductDto,
+  UpdateProductDto,
+} from '@ct/dto';
 
 @Injectable()
 export class ProductsRepository {
@@ -26,7 +28,7 @@ export class ProductsRepository {
 
   constructor(private readonly sharedService: SharedService) {
     this.documentClient = this.sharedService.getDynamoDbDocumentClient();
-    this.tableName = this.sharedService.getConfig().dynamoDb.table;
+    this.tableName = this.sharedService.config.dynamoDb.table;
   }
 
   getKeys(productId: string): Record<string, unknown> {
@@ -116,7 +118,7 @@ export class ProductsRepository {
 
   async update(
     productId: string,
-    updatedProduct: UpdateProductDto
+    updatedProduct: UpdateProductDto & Pick<ProductDto, 'averageRating'>
   ): Promise<ProductDto> {
     this.logger.log({ updatedProduct }, 'update.input');
     try {

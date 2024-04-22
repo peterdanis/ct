@@ -1,10 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { ProducerService } from '@ct/kafka';
-import { ReviewModifiedAction, ReviewModifiedMessageDto } from '@ct/dto';
-import { Producer } from 'kafkajs';
+import { Producer, ProducerService } from '@ct/kafka';
+import { CreateReviewDto, ReviewModifiedType, UpdateReviewDto } from '@ct/dto';
 import { ReviewsRepository } from './reviews.repository';
-import { UpdateReviewDto } from './dto/update-review.dto';
-import { CreateReviewDto } from './dto/create-review.dto';
 import { SharedService } from '../shared/shared.service';
 import { ProductsRepository } from '../products/products.repository';
 
@@ -16,11 +13,12 @@ export class ReviewsService implements OnModuleInit {
   constructor(
     private readonly reviewsRepository: ReviewsRepository,
     private readonly producerService: ProducerService,
-    private readonly sharedService: SharedService
+    private readonly sharedService: SharedService,
+    private readonly productsRepository: ProductsRepository
   ) {}
 
   async onModuleInit() {
-    const { reviewModifiedTopic, brokers } = this.sharedService.env.kafka;
+    const { reviewModifiedTopic, brokers } = this.sharedService.config.kafka;
     this.reviewModifiedTopic = reviewModifiedTopic;
 
     const kafkaConfig = { brokers };
@@ -39,26 +37,18 @@ export class ReviewsService implements OnModuleInit {
   async create(productId: string, reviewInput: CreateReviewDto) {
     await this.productsRepository.getById(productId);
     const review = await this.reviewsRepository.create(productId, reviewInput);
+
     const { reviewId, rating } = review;
-    const reviewModifiedEvent: ReviewModifiedMessageDto = {
-      id: ulid(),
-      source: 'com.ct.product.product-service', // TODO: extract
-      type: 'reviewModifiedEvent', // TODO: extract
-      time: new Date().toISOString(),
-      specversion: '1.0', // TODO: extract
-      data: {
-        action: ReviewModifiedAction.CREATED,
-        reviewId,
-        rating,
-        productId,
-      },
-    };
-    await this.producer.send({
-      topic: this.reviewModifiedTopic,
-      messages: [
-        { key: productId, value: JSON.stringify(reviewModifiedEvent) },
-      ],
-    });
+    const event = this.producerService.createReviewModifiedEvent(
+      this.sharedService.config.kafka.source,
+      ReviewModifiedType.created,
+      { productId, reviewId, newRating: rating }
+    );
+
+    // TODO: think about adding correlationId from request to event
+    await this.producer.send(this.reviewModifiedTopic, [
+      { key: productId, event },
+    ]);
 
     return review;
   }
@@ -68,12 +58,48 @@ export class ReviewsService implements OnModuleInit {
     reviewId: string,
     updatedReview: UpdateReviewDto
   ) {
-    // TODO: return both new and old - needed for event
-    return this.reviewsRepository.update(productId, reviewId, updatedReview);
+    const { rating: newRating } = updatedReview;
+    const isRatingUpdated = newRating !== undefined;
+
+    const review = await this.reviewsRepository.update(
+      productId,
+      reviewId,
+      updatedReview,
+      isRatingUpdated
+    );
+
+    if (isRatingUpdated) {
+      const { rating: oldRating } = review;
+      const event = this.producerService.createReviewModifiedEvent(
+        this.sharedService.config.kafka.source,
+        ReviewModifiedType.updated,
+        {
+          productId,
+          reviewId,
+          newRating,
+          oldRating,
+        }
+      );
+
+      await this.producer.send(this.reviewModifiedTopic, [
+        { key: productId, event },
+      ]);
+    }
+
+    return { ...review, ...updatedReview };
   }
 
   async delete(productId: string, reviewId: string) {
-    // TODO: check existence
-    return this.reviewsRepository.delete(productId, reviewId);
+    const { rating } = await this.reviewsRepository.delete(productId, reviewId);
+
+    const event = this.producerService.createReviewModifiedEvent(
+      this.sharedService.config.kafka.source,
+      ReviewModifiedType.deleted,
+      { productId, reviewId, oldRating: rating }
+    );
+
+    await this.producer.send(this.reviewModifiedTopic, [
+      { key: productId, event },
+    ]);
   }
 }

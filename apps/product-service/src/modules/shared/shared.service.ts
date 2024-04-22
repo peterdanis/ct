@@ -8,28 +8,7 @@ import { validateSync } from 'class-validator';
 export class SharedService {
   private logger = new Logger(SharedService.name);
 
-  getConfig() {
-    return {
-      dynamoDb: {
-        endpoint: process.env.DYNAMODB_ENDPOINT,
-        table: process.env.DYNAMODB_TABLE,
-      },
-      kafka: {
-        bootstrapServers: process.env.KAFKA_BOOTSTRAP_SERVERS,
-        ratingCalculatedTopic: process.env.KAFKA_RATING_CALCULATED_TOPIC,
-        reviewModifiedTopic: process.env.KAFKA_REVIEW_MODIFIED_TOPIC,
-        groupId: process.env.KAFKA_GROUP_ID,
-        fromBeginning:
-          process.env.KAFKA_START_FROM_BEGINNING === 'true' ? true : false,
-        partitionsConsumedConcurrently: parseInt(
-          process.env.KAFKA_PARTITIONS_CONSUMED_CONCURRENTLY,
-          10
-        ),
-      },
-    };
-  }
-
-  env = {
+  config = {
     dynamoDb: {
       endpoint: process.env.DYNAMODB_ENDPOINT,
       table: process.env.DYNAMODB_TABLE,
@@ -45,12 +24,13 @@ export class SharedService {
         process.env.KAFKA_PARTITIONS_CONSUMED_CONCURRENTLY,
         10
       ),
+      source: 'product/product-service',
     },
   };
 
   getDynamoDbDocumentClient() {
     const bareboneClient = new DynamoDBClient({
-      endpoint: this.getConfig().dynamoDb.endpoint,
+      endpoint: this.config.dynamoDb.endpoint,
     });
     return DynamoDBDocumentClient.from(bareboneClient, {
       marshallOptions: {

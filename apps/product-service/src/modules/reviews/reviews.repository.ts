@@ -8,16 +8,17 @@ import {
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { ulid } from 'ulidx';
+import {
+  CreateReviewDto,
+  GetReviewsDto,
+  ReviewDto,
+  UpdateReviewDto,
+} from '@ct/dto';
 import { SharedService } from '../shared/shared.service';
-import { CreateReviewDto } from './dto/create-review.dto';
-import { ReviewDto } from './dto/review.dto';
-import { UpdateReviewDto } from './dto/update-review.dto';
 import {
   ConditionalCheckFailedException,
   ReturnValue,
 } from '@aws-sdk/client-dynamodb';
-import { GetReviewsDto } from './dto/get-reviews.dto';
-import { ProductsRepository } from '../products/products.repository';
 
 // TODO: extract to libs
 @Injectable()
@@ -26,12 +27,9 @@ export class ReviewsRepository {
   private tableName: string;
   private logger = new Logger(ReviewsRepository.name);
 
-  constructor(
-    private readonly sharedService: SharedService,
-    private readonly productsRepository: ProductsRepository
-  ) {
+  constructor(private readonly sharedService: SharedService) {
     this.documentClient = this.sharedService.getDynamoDbDocumentClient();
-    this.tableName = this.sharedService.getConfig().dynamoDb.table;
+    this.tableName = this.sharedService.config.dynamoDb.table;
   }
 
   getKeys(productId: string, reviewId: string): Record<string, unknown> {
@@ -118,19 +116,27 @@ export class ReviewsRepository {
     } as GetReviewsDto;
   }
 
-  async delete(productId: string, reviewId: string): Promise<void> {
+  async delete(productId: string, reviewId: string): Promise<ReviewDto> {
     const deleteCommand = new DeleteCommand({
       TableName: this.tableName,
       Key: this.getKeys(productId, reviewId),
+      ReturnValues: ReturnValue.ALL_OLD,
     });
 
-    await this.documentClient.send(deleteCommand);
+    const { Attributes } = await this.documentClient.send(deleteCommand);
+
+    if (!Attributes) {
+      throw new NotFoundException();
+    }
+
+    return this.sharedService.validateAndStrip(Attributes, ReviewDto);
   }
 
   async update(
     productId: string,
     reviewId: string,
-    updatedReview: UpdateReviewDto
+    updatedReview: UpdateReviewDto,
+    returnOriginalValues?: boolean
   ): Promise<ReviewDto> {
     this.logger.log({ updatedReview }, 'update.input');
     try {
@@ -143,7 +149,9 @@ export class ReviewsRepository {
         TableName: this.tableName,
         Key: key,
         AttributeUpdates: attributeUpdates,
-        ReturnValues: ReturnValue.ALL_NEW,
+        ReturnValues: returnOriginalValues
+          ? ReturnValue.ALL_OLD
+          : ReturnValue.ALL_NEW,
         Expected: {
           PK: {
             Exists: true,

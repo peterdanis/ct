@@ -1,4 +1,5 @@
 export * from './events/review-modified-message.dto';
+export * from './events/rating-calculated-message.dto';
 export * from './product-service/products/create-product.dto';
 export * from './product-service/products/get-products.dto';
 export * from './product-service/products/product.dto';
