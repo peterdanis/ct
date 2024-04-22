@@ -72,8 +72,7 @@ export class ProducerService implements OnApplicationShutdown {
     };
   }
 
-  // TODO: Extract to separate lib
-  createReviewModifiedEvent<T extends ReviewModifiedType>(
+  createEvent<T extends ReviewModifiedType | RatingCalculatedType>(
     source: string,
     type: T,
     data: T extends ReviewModifiedType.created
@@ -82,23 +81,9 @@ export class ProducerService implements OnApplicationShutdown {
       ? ReviewUpdatedData
       : T extends ReviewModifiedType.deleted
       ? ReviewDeletedData
+      : T extends RatingCalculatedType.calculated
+      ? RatingCalculatedData
       : never
-  ) {
-    return {
-      id: ulid(),
-      source,
-      type,
-      time: new Date().toISOString(),
-      specversion: '1.0',
-      data,
-    };
-  }
-
-  // TODO: Extract to separate lib
-  createRatingCalculatedEvent<T extends RatingCalculatedType>(
-    source: string,
-    type: T,
-    data: RatingCalculatedData
   ) {
     return {
       id: ulid(),

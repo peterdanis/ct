@@ -40,7 +40,7 @@ export class ReviewsService implements OnModuleInit {
     const review = await this.reviewsRepository.create(productId, reviewInput);
 
     const { reviewId, rating } = review;
-    const event = this.producerService.createReviewModifiedEvent(
+    const event = this.producerService.createEvent(
       this.configService.kafka.source,
       ReviewModifiedType.created,
       { productId, reviewId, newRating: rating }
@@ -71,7 +71,7 @@ export class ReviewsService implements OnModuleInit {
 
     if (isRatingUpdated) {
       const { rating: oldRating } = review;
-      const event = this.producerService.createReviewModifiedEvent(
+      const event = this.producerService.createEvent(
         this.configService.kafka.source,
         ReviewModifiedType.updated,
         {
@@ -93,7 +93,7 @@ export class ReviewsService implements OnModuleInit {
   async delete(productId: string, reviewId: string) {
     const { rating } = await this.reviewsRepository.delete(productId, reviewId);
 
-    const event = this.producerService.createReviewModifiedEvent(
+    const event = this.producerService.createEvent(
       this.configService.kafka.source,
       ReviewModifiedType.deleted,
       { productId, reviewId, oldRating: rating }

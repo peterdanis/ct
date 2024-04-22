@@ -101,7 +101,7 @@ export class AppService implements OnModuleInit {
     const averageRating =
       newReviewCount > 0 ? newReviewRatingSum / newReviewCount : undefined;
 
-    const event = this.producerService.createRatingCalculatedEvent(
+    const event = this.producerService.createEvent(
       this.configService.kafka.source,
       RatingCalculatedType.calculated,
       { productId, averageRating }
