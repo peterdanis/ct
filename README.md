@@ -214,6 +214,7 @@ Notes related to picking DynamoDB for this use case:
 - consistent latency independently of number of products
 - in case of switching the service to serverless it does not need any special care
 - combined size of review text + other review attributes is limited to 400 KB (max item size in DynamoDB), can be partially mitigated using compression (store the review text compressed, un-compress on read in product-service)
+- deleting product does not delete its reviews, this needs a query + batchWrite
 
 ### Messaging
 
